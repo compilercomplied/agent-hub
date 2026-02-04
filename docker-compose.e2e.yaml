@@ -3,7 +3,7 @@ services:
   api:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.e2e
       target: runtime
     container_name: agent-hub-api
     ports:
@@ -23,7 +23,7 @@ services:
   e2e-tests:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.e2e
       target: test
     container_name: agent-hub-e2e-tests
     depends_on:
