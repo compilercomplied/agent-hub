@@ -1,0 +1,41 @@
+name: E2E Tests
+
+on:
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+jobs:
+  e2e-tests:
+    name: Run End-to-End Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Build Docker images
+        run: |
+          docker compose -f docker-compose.e2e.yaml build
+
+      - name: Run e2e tests
+        run: |
+          ./scripts/run-e2e.sh
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose -f docker-compose.e2e.yaml down -v --remove-orphans
