@@ -34,8 +34,3 @@ jobs:
       - name: Run e2e tests
         run: |
           ./scripts/run-e2e.sh
-
-      - name: Cleanup
-        if: always()
-        run: |
-          docker compose -f docker-compose.e2e.yaml down -v --remove-orphans

@@ -1,15 +1,5 @@
 #!/usr/bin/env bash
 
-# run-e2e.sh - Script to run end-to-end tests using Docker Compose
-#
-# This script simplifies the execution of e2e tests by:
-# 1. Building the Docker images
-# 2. Starting the API service
-# 3. Running the tests
-# 4. Cleaning up resources
-#
-# Usage: ./scripts/run-e2e.sh
-
 set -euo pipefail
 
 # Colors for output

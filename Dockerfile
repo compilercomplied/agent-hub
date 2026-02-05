@@ -29,10 +29,10 @@ COPY pyproject.toml ./
 COPY uv.lock* ./
 
 # Create virtual environment and install dependencies
-# Note: uv is installed in /root/.cargo/bin, so we use the full path
-RUN /root/.cargo/bin/uv venv /opt/venv && \
+# Note: uv is installed in /root/.local/bin, so we use the full path
+RUN /root/.local/bin/uv venv /opt/venv && \
     . /opt/venv/bin/activate && \
-    /root/.cargo/bin/uv pip install --no-cache fastapi uvicorn[standard] pydantic
+    /root/.local/bin/uv pip install --no-cache fastapi uvicorn[standard] pydantic
 
 # Stage 3: Runtime stage
 FROM base AS runtime
