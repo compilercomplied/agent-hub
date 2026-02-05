@@ -62,6 +62,28 @@ class TestPromptAPI:
 
         client.close()
 
+    def test_prompt_endpoint_accepts_multiline_prompt(self) -> None:
+        """Test that the endpoint accepts multiline prompts.
+
+        This test verifies that prompts containing newlines
+        are accepted by the API following the AAA pattern.
+        """
+        # Arrange
+        client = create_client()
+        payload = {
+            "prompt": "Line 1\nLine 2\nLine 3"
+        }
+
+        # Act
+        response = client.post("/api/v1/prompt", json=payload)
+
+        # Assert
+        assert response.status_code == 200
+        data = response.json()
+        assert data["message"] == "hello world"
+
+        client.close()
+
     def test_prompt_endpoint_requires_prompt_field(self) -> None:
         """Test that the endpoint requires the prompt field.
 
