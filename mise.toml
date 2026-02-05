@@ -2,3 +2,7 @@
 python = "latest"
 uv = "latest"
 ruff = "latest"
+
+[tasks."e2e:docker"]
+description = "Run end-to-end tests using Docker Compose"
+run = "scripts/run-e2e.sh"
