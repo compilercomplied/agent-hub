@@ -1,0 +1,40 @@
+services:
+  # API service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: agent-hub-api
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - agent-hub-network
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  # E2E test service
+  e2e-tests:
+    build:
+      context: .
+      dockerfile: Dockerfile.e2e
+    container_name: agent-hub-e2e-tests
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - agent-hub-network
+    environment:
+      - API_BASE_URL=http://api:8000
+      - PYTHONUNBUFFERED=1
+    command: ["pytest", "e2e/", "-v", "--tb=short", "--color=yes"]
+
+networks:
+  agent-hub-network:
+    driver: bridge

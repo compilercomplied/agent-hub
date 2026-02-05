@@ -1,0 +1,33 @@
+FROM python:3.12-slim
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+WORKDIR /app
+
+# Create virtual environment and install ONLY test dependencies
+# Note: uv is installed in /root/.local/bin
+RUN /root/.local/bin/uv venv /opt/venv && \
+    . /opt/venv/bin/activate && \
+    /root/.local/bin/uv pip install --no-cache pytest httpx
+
+# Set environment to use virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Copy ONLY the e2e tests
+COPY e2e/ ./e2e/
+
+# Run the tests
+CMD ["pytest", "e2e/", "-v", "--tb=short"]
