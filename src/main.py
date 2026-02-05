@@ -6,24 +6,35 @@ This module provides a REST API endpoint for processing prompts.
 from __future__ import annotations
 
 import logging
+import os
 from typing import Annotated
 
 from fastapi import FastAPI
+from langchain_anthropic import ChatAnthropic
+from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, Field
 
-# Filter out health check logs
-class EndpointFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.args is not None and len(record.args) >= 3 and str(record.args[2]).find("/health") == -1
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-# Add filter to uvicorn access logger
-logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
+# Verify environment
+api_key = os.getenv("ANTHROPIC_API_KEY")
+if not api_key:
+    logger.error("ANTHROPIC_API_KEY is not set!")
+else:
+    logger.info(f"ANTHROPIC_API_KEY is set (length: {len(api_key)})")
 
 app = FastAPI(
     title="Agent Hub API",
     description="API for agent orchestration and prompt processing",
     version="1.0.0",
 )
+
+# Initialize the LLM and the Agent
+model = ChatAnthropic(model="claude-sonnet-4-5-20250929")
+agent = create_react_agent(model, tools=[])
+logger.info("Agent initialized successfully")
 
 
 class PromptRequest(BaseModel):
@@ -70,7 +81,11 @@ async def process_prompt(request: PromptRequest) -> PromptResponse:
         PromptResponse: A response containing the message.
 
     """
-    return PromptResponse(message="hello world")
+    inputs = {"messages": [("user", request.prompt)]}
+    result = await agent.ainvoke(inputs)
+    # The last message in the list is the agent's response
+    final_message = result["messages"][-1].content
+    return PromptResponse(message=final_message)
 
 
 @app.get("/health", summary="Health check endpoint")

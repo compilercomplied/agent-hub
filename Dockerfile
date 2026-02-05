@@ -18,14 +18,13 @@ FROM base AS builder
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 WORKDIR /app
-COPY pyproject.toml ./
+COPY pyproject.toml README.md ./
 COPY uv.lock* ./
 
 # Create virtual environment and install dependencies
-# Note: uv is installed in /root/.local/bin, so we use the full path
 RUN /root/.local/bin/uv venv /opt/venv && \
     . /opt/venv/bin/activate && \
-    /root/.local/bin/uv pip install --no-cache fastapi uvicorn[standard] pydantic
+    /root/.local/bin/uv pip install .
 
 
 FROM base AS runtime

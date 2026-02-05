@@ -8,6 +8,9 @@ dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
     "pydantic>=2.9.0",
+    "langchain",
+    "langchain-anthropic",
+    "langgraph",
 ]
 
 [project.optional-dependencies]
@@ -58,3 +61,6 @@ quote-style = "double"
 indent-style = "space"
 docstring-code-format = true
 docstring-code-line-length = 72
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
