@@ -1,6 +1,3 @@
-# Multi-stage Dockerfile for Agent Hub API
-
-# Stage 1: Base image with Python and system dependencies
 FROM python:3.12-slim AS base
 
 # Set environment variables
@@ -15,16 +12,12 @@ RUN apt-get update && \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Stage 2: Builder stage for installing dependencies
+
 FROM base AS builder
 
-# Install uv for fast dependency management
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Set working directory
 WORKDIR /app
-
-# Copy dependency files
 COPY pyproject.toml ./
 COPY uv.lock* ./
 
@@ -34,35 +27,22 @@ RUN /root/.local/bin/uv venv /opt/venv && \
     . /opt/venv/bin/activate && \
     /root/.local/bin/uv pip install --no-cache fastapi uvicorn[standard] pydantic
 
-# Stage 3: Runtime stage
+
 FROM base AS runtime
 
-# Create non-root user
 RUN useradd -m -u 1000 appuser && \
     mkdir -p /app && \
     chown -R appuser:appuser /app
 
-# Copy virtual environment from builder
 COPY --from=builder --chown=appuser:appuser /opt/venv /opt/venv
 
 # Set environment to use virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Switch to non-root user
 USER appuser
-
-# Set working directory
 WORKDIR /app
-
-# Copy application code
 COPY --chown=appuser:appuser src/ ./src/
 
-# Expose port
 EXPOSE 8000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"
-
-# Run the application
 CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
