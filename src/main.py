@@ -5,10 +5,19 @@ This module provides a REST API endpoint for processing prompts.
 
 from __future__ import annotations
 
+import logging
 from typing import Annotated
 
 from fastapi import FastAPI
 from pydantic import BaseModel, Field
+
+# Filter out health check logs
+class EndpointFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return record.args is not None and len(record.args) >= 3 and str(record.args[2]).find("/health") == -1
+
+# Add filter to uvicorn access logger
+logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
 
 app = FastAPI(
     title="Agent Hub API",
