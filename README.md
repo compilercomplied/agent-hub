@@ -55,6 +55,7 @@ docker compose -f docker-compose.e2e.yaml up --abort-on-container-exit
 
 ```bash
 # Start the API
+export AGENT_HUB_ANTHROPIC_API_KEY=your_api_key_here
 uvicorn src.main:app &
 
 # Run tests

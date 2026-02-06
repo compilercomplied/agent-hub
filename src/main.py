@@ -6,7 +6,6 @@ This module provides a REST API endpoint for processing prompts.
 from __future__ import annotations
 
 import logging
-import os
 from typing import Annotated
 
 from fastapi import FastAPI
@@ -14,16 +13,19 @@ from langchain_anthropic import ChatAnthropic
 from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel, Field
 
+from src.config import load_configuration
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Verify environment
-api_key = os.getenv("ANTHROPIC_API_KEY")
-if not api_key:
-    logger.error("ANTHROPIC_API_KEY is not set!")
-else:
-    logger.info(f"ANTHROPIC_API_KEY is set (length: {len(api_key)})")
+# Load configuration
+try:
+    config = load_configuration()
+    logger.info("Configuration loaded successfully")
+except Exception:
+    logger.exception("Failed to load configuration")
+    raise
 
 app = FastAPI(
     title="Agent Hub API",
@@ -32,7 +34,10 @@ app = FastAPI(
 )
 
 # Initialize the LLM and the Agent
-model = ChatAnthropic(model="claude-sonnet-4-5-20250929")
+model = ChatAnthropic(
+    model="claude-sonnet-4-5-20250929",
+    api_key=config.anthropic.api_key,
+)
 agent = create_react_agent(model, tools=[])
 logger.info("Agent initialized successfully")
 

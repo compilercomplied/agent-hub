@@ -2,6 +2,8 @@
 python = "latest"
 uv = "latest"
 ruff = "latest"
+pulumi = "latest"
+node = "latest"
 
 [tasks."e2e:docker"]
 description = "Run end-to-end tests using Docker Compose"
