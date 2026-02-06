@@ -32,5 +32,7 @@ jobs:
           docker compose -f docker-compose.e2e.yaml build
 
       - name: Run e2e tests
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           ./scripts/run-e2e.sh
