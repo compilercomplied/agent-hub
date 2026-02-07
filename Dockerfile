@@ -24,7 +24,15 @@ COPY uv.lock* ./
 # Create virtual environment and install dependencies
 RUN /root/.local/bin/uv venv /opt/venv && \
     . /opt/venv/bin/activate && \
-    /root/.local/bin/uv pip install .
+    /root/.local/bin/uv pip install . && \
+    /root/.local/bin/uv pip install basedpyright
+
+# Copy source and config for type checking
+COPY src/ ./src/
+COPY pyrightconfig.json ./
+
+# Run strict type check during build
+RUN . /opt/venv/bin/activate && basedpyright
 
 
 FROM base AS runtime

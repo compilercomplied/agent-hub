@@ -6,18 +6,19 @@ This module provides a REST API endpoint for processing prompts.
 from __future__ import annotations
 
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import FastAPI
+from langchain.agents import create_agent
 from langchain_anthropic import ChatAnthropic
-from langgraph.prebuilt import create_react_agent
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, SecretStr
+from typing_extensions import TypedDict
 
 from src.config import load_configuration
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger: logging.Logger = logging.getLogger(__name__)
 
 # Load configuration
 try:
@@ -27,18 +28,25 @@ except Exception:
     logger.exception("Failed to load configuration")
     raise
 
-app = FastAPI(
+app: FastAPI = FastAPI(
     title="Agent Hub API",
     description="API for agent orchestration and prompt processing",
     version="1.0.0",
 )
 
-# Initialize the LLM and the Agent
+
+class AgentContext(TypedDict):
+    """Context schema for the agent."""
+
+
 model = ChatAnthropic(
-    model="claude-sonnet-4-5-20250929",
-    api_key=config.anthropic.api_key,
+    model_name="claude-sonnet-4-5-20250929",
+    api_key=SecretStr(config.anthropic.api_key),
+    timeout=30,
+    stop=None,
 )
-agent = create_react_agent(model, tools=[])
+
+agent = create_agent(model, tools=[], context_schema=AgentContext)
 logger.info("Agent initialized successfully")
 
 
@@ -86,11 +94,14 @@ async def process_prompt(request: PromptRequest) -> PromptResponse:
         PromptResponse: A response containing the message.
 
     """
-    inputs = {"messages": [("user", request.prompt)]}
+    # Use Any to satisfy complex library-defined type requirements for ainvoke
+    inputs: Any = {
+        "messages": [{"role": "user", "content": request.prompt}]
+    }
     result = await agent.ainvoke(inputs)
     # The last message in the list is the agent's response
     final_message = result["messages"][-1].content
-    return PromptResponse(message=final_message)
+    return PromptResponse(message=str(final_message))
 
 
 @app.get("/health", summary="Health check endpoint")

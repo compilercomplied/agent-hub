@@ -20,47 +20,12 @@ test = [
 ]
 dev = [
     "ruff>=0.7.0",
+    "basedpyright>=1.27.0",
 ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.ruff]
-line-length = 88
-target-version = "py312"
-
-[tool.ruff.lint]
-select = ["ALL"]
-ignore = [
-    "COM812",  # Conflicts with formatter
-    "ISC001",  # Conflicts with formatter
-]
-fixable = ["ALL"]
-unfixable = []
-preview = true
-
-[tool.ruff.lint.per-file-ignores]
-"e2e/**/*.py" = [
-    "S101",    # Allow assert statements in tests
-    "PLR2004", # Allow magic values in tests
-    "ANN",     # Allow missing type annotations in tests
-]
-
-[tool.ruff.lint.pydocstyle]
-convention = "google"
-
-[tool.ruff.lint.isort]
-required-imports = ["from __future__ import annotations"]
-
-[tool.ruff.lint.flake8-type-checking]
-strict = true
-
-[tool.ruff.format]
-quote-style = "double"
-indent-style = "space"
-docstring-code-format = true
-docstring-code-line-length = 72
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]

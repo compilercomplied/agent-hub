@@ -5,14 +5,10 @@ of the API without importing the application code.
 """
 
 from __future__ import annotations
-
+from collections.abc import Generator
 import os
-from typing import TYPE_CHECKING
-
 import httpx
 
-if TYPE_CHECKING:
-    from collections.abc import Generator
 
 
 def get_base_url() -> str:
