@@ -14,8 +14,8 @@ from e2e.client import create_client
 class TestPromptAPI:
     """Test suite for the /api/v1/prompt endpoint."""
 
-    def test_prompt_endpoint_returns_hello_world(self) -> None:
-        """Test that the prompt endpoint returns 'hello world'.
+    def test_prompt_endpoint_returns_success(self) -> None:
+        """Test that the prompt endpoint returns 'E2E_SUCCESS'.
 
         This test follows the arrange-act-assert pattern:
         - Arrange: Set up the HTTP client and request payload
@@ -24,7 +24,7 @@ class TestPromptAPI:
         """
         # Arrange
         client = create_client()
-        payload = {"prompt": "test prompt"}
+        payload = {"prompt": "This is a E2E test. Reply with 'E2E_SUCCESS'"}
 
         # Act
         response = client.post("/api/v1/prompt", json=payload)
@@ -33,7 +33,7 @@ class TestPromptAPI:
         assert response.status_code == 200
         data = response.json()
         assert "message" in data
-        assert data["message"] == "hello world"
+        assert "E2E_SUCCESS" in data["message"]
 
         client.close()
 
@@ -58,7 +58,7 @@ class TestPromptAPI:
 
             # Assert
             assert response.status_code == 200
-            assert response.json()["message"] == "hello world"
+            assert isinstance(response.json()["message"], str)
 
         client.close()
 
@@ -80,7 +80,7 @@ class TestPromptAPI:
         # Assert
         assert response.status_code == 200
         data = response.json()
-        assert data["message"] == "hello world"
+        assert "message" in data
 
         client.close()
 

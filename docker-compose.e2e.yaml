@@ -18,6 +18,7 @@ services:
       - agent-hub-network
     environment:
       - PYTHONUNBUFFERED=1
+      - AGENT_HUB_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 
   # E2E test service
   e2e-tests:

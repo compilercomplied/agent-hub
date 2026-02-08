@@ -1,0 +1,12 @@
+{
+    "name": "agent-hub",
+    "main": "index.ts",
+    "devDependencies": {
+        "@types/node": "^24",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "@pulumi/kubernetes": "^4.24.1",
+        "@pulumi/pulumi": "^3.113.0"
+    }
+}

@@ -6,24 +6,48 @@ This module provides a REST API endpoint for processing prompts.
 from __future__ import annotations
 
 import logging
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import FastAPI
-from pydantic import BaseModel, Field
+from langchain.agents import create_agent
+from langchain_anthropic import ChatAnthropic
+from pydantic import BaseModel, Field, SecretStr
+from typing_extensions import TypedDict
 
-# Filter out health check logs
-class EndpointFilter(logging.Filter):
-    def filter(self, record: logging.LogRecord) -> bool:
-        return record.args is not None and len(record.args) >= 3 and str(record.args[2]).find("/health") == -1
+from src.config import load_configuration
 
-# Add filter to uvicorn access logger
-logging.getLogger("uvicorn.access").addFilter(EndpointFilter())
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger: logging.Logger = logging.getLogger(__name__)
 
-app = FastAPI(
+# Load configuration
+try:
+    config = load_configuration()
+    logger.info("Configuration loaded successfully")
+except Exception:
+    logger.exception("Failed to load configuration")
+    raise
+
+app: FastAPI = FastAPI(
     title="Agent Hub API",
     description="API for agent orchestration and prompt processing",
     version="1.0.0",
 )
+
+
+class AgentContext(TypedDict):
+    """Context schema for the agent."""
+
+
+model = ChatAnthropic(
+    model_name="claude-sonnet-4-5-20250929",
+    api_key=SecretStr(config.anthropic.api_key),
+    timeout=30,
+    stop=None,
+)
+
+agent = create_agent(model, tools=[], context_schema=AgentContext)
+logger.info("Agent initialized successfully")
 
 
 class PromptRequest(BaseModel):
@@ -70,7 +94,14 @@ async def process_prompt(request: PromptRequest) -> PromptResponse:
         PromptResponse: A response containing the message.
 
     """
-    return PromptResponse(message="hello world")
+    # Use Any to satisfy complex library-defined type requirements for ainvoke
+    inputs: Any = {
+        "messages": [{"role": "user", "content": request.prompt}]
+    }
+    result = await agent.ainvoke(inputs)
+    # The last message in the list is the agent's response
+    final_message = result["messages"][-1].content
+    return PromptResponse(message=str(final_message))
 
 
 @app.get("/health", summary="Health check endpoint")

@@ -7,7 +7,8 @@ A FastAPI-based REST API for agent orchestration and prompt processing.
 - POST endpoint at `/api/v1/prompt` for prompt processing
 - Health check endpoint at `/health`
 - Comprehensive end-to-end testing
-- Docker containerization with multi-stage builds
+- Strict type checking with `basedpyright`
+- Docker containerization with multi-stage builds and type safety enforcement
 - Strict code quality enforcement with Ruff
 - Automated CI/CD with GitHub Actions
 
@@ -23,14 +24,12 @@ A FastAPI-based REST API for agent orchestration and prompt processing.
 
 1. Install dependencies:
 ```bash
-uv venv
-source .venv/bin/activate
-uv pip install -e ".[dev,test]"
+uv sync --all-extras --dev
 ```
 
-2. Run the application:
+2. Run the application with type checking:
 ```bash
-uvicorn src.main:app --reload
+mise run start
 ```
 
 3. Access the API:
@@ -55,6 +54,7 @@ docker compose -f docker-compose.e2e.yaml up --abort-on-container-exit
 
 ```bash
 # Start the API
+export AGENT_HUB_ANTHROPIC_API_KEY=your_api_key_here
 uvicorn src.main:app &
 
 # Run tests
@@ -63,6 +63,15 @@ pytest e2e/ -v
 ```
 
 ## Code Quality
+
+### Type Checking
+
+The project uses `basedpyright` for strict type checking. The application will not build or run if there are type errors.
+
+```bash
+# Run strict type check
+mise run check:types
+```
 
 ### Linting and Formatting
 
@@ -121,10 +130,12 @@ Health check endpoint.
 ├── src/                 # Application source code
 │   ├── __init__.py
 │   └── main.py         # FastAPI application
-├── Dockerfile           # Multi-stage Docker build
+├── Dockerfile           # Multi-stage Docker build with type-checking
 ├── docker-compose.e2e.yaml
 ├── pyproject.toml       # Project configuration
+├── pyrightconfig.json   # Strict type-checking configuration
 ├── ruff.toml           # Ruff configuration
+├── mise.toml           # Task runner configuration
 └── README.md
 ```
 
@@ -132,8 +143,10 @@ Health check endpoint.
 
 ### Build and Run
 
+The Docker build includes a mandatory strict type check step. If there are any type errors, the build will fail.
+
 ```bash
-# Build the image
+# Build the image (includes type check)
 docker build -t agent-hub-api .
 
 # Run the container

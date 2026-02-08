@@ -1,24 +1,19 @@
-# Ruff configuration with strictest mode possible
-line-length = 88
+line-length = 80
 target-version = "py312"
 
 [lint]
-# Enable all rules
 select = ["ALL"]
 
-# Explicitly enable the strictest checks
 ignore = [
-    # We'll be very selective about what we ignore
-    # Only ignore rules that conflict with each other or are impossible to satisfy together
     "COM812",  # Conflicts with formatter
     "ISC001",  # Conflicts with formatter
+		"TC003",	 # Require type-checking blocks for types in stdlib
+    "D100",    # Missing docstring in public module
+    "CPY001",  # Missing copyright notice at top of file
 ]
 
-# Allow autofix for all enabled rules
 fixable = ["ALL"]
 unfixable = []
-
-# Enable preview rules for even stricter checking
 preview = true
 
 [lint.per-file-ignores]

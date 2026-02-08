@@ -2,7 +2,18 @@
 python = "latest"
 uv = "latest"
 ruff = "latest"
+pulumi = "latest"
+node = "latest"
 
 [tasks."e2e:docker"]
 description = "Run end-to-end tests using Docker Compose"
 run = "scripts/run-e2e.sh"
+
+[tasks."check:types"]
+description = "Run strict type checking"
+run = "uv run basedpyright"
+
+[tasks.start]
+description = "Run the application with type checking"
+depends = ["check:types"]
+run = "uv run uvicorn src.main:app --reload"
