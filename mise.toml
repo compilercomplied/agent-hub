@@ -17,3 +17,11 @@ run = "uv run basedpyright"
 description = "Run the application with type checking"
 depends = ["check:types"]
 run = "uv run uvicorn src.main:app --reload"
+
+[tasks.install-packages]
+description = "Install all dependencies using uv"
+run = "uv sync --all-extras --dev"
+
+[tasks.setup-project]
+description = "Setup the project from scratch"
+depends = ["install-packages"]
