@@ -13,7 +13,7 @@ if ! command -v jq &> /dev/null; then
     return 1
 fi
 
-if [ -z "$PULUMI_CONFIG_PASSPHRASE" ]; then
+if [ -z "${PULUMI_CONFIG_PASSPHRASE:-}" ]; then
     echo "Error: PULUMI_CONFIG_PASSPHRASE is not set."
     return 1
 fi
