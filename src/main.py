@@ -10,7 +10,7 @@ from typing import Annotated, Any
 
 from fastapi import FastAPI
 from langchain.agents import create_agent
-from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import TypedDict
 
@@ -39,11 +39,11 @@ class AgentContext(TypedDict):
     """Context schema for the agent."""
 
 
-model = ChatAnthropic(
-    model_name="claude-sonnet-4-5-20250929",
-    api_key=SecretStr(config.anthropic.api_key),
+model = ChatOpenAI(
+    model="kimi-k2.5",
+    api_key=SecretStr(config.kimi.api_key),
+    base_url="https://api.moonshot.ai/v1",
     timeout=30,
-    stop=None,
 )
 
 agent = create_agent(model, tools=[], context_schema=AgentContext)

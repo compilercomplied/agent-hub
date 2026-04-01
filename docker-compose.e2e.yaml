@@ -16,9 +16,10 @@ services:
       start_period: 30s
     networks:
       - agent-hub-network
+    env_file:
+      - .env.docker
     environment:
       - PYTHONUNBUFFERED=1
-      - AGENT_HUB_ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
 
   # E2E test service
   e2e-tests:
