@@ -17,9 +17,19 @@ cd "${PROJECT_ROOT}"
 
 echo -e "${YELLOW}Starting e2e test run...${NC}"
 
+# Loading environment variables from Pulumi
+echo -e "${YELLOW}Loading environment variables from Pulumi...${NC}"
+# source the script directly to export variables to the current shell
+source "${PROJECT_ROOT}/scripts/load-env.sh" || echo -e "${YELLOW}Warning: Could not load environment from Pulumi. Using existing shell environment.${NC}"
+
+# Generate a temporary env file for Docker Compose
+# This includes all variables starting with AGENT_HUB_
+env | grep '^AGENT_HUB_' > "${PROJECT_ROOT}/.env.docker" || true
+
 # Function to cleanup on exit
 cleanup() {
     echo -e "\n${YELLOW}Cleaning up...${NC}"
+    rm -f "${PROJECT_ROOT}/.env.docker"
     docker compose -f docker-compose.e2e.yaml down -v --remove-orphans 2>/dev/null || true
 }
 

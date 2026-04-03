@@ -22,6 +22,15 @@ run = "uv run uvicorn src.main:app --reload"
 description = "Install all dependencies using uv"
 run = "uv sync --all-extras --dev"
 
+[tasks.setup-pulumi]
+description = "Setup Pulumi stacks and dependencies"
+run = """
+cd iac
+npm install
+pulumi stack init local || true
+pulumi stack init prod || true
+"""
+
 [tasks.setup-project]
 description = "Setup the project from scratch"
-depends = ["install-packages"]
+depends = ["install-packages", "setup-pulumi"]

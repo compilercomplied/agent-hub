@@ -5,11 +5,11 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
-class AnthropicConfiguration:
-    """Configuration for Anthropic API.
+class KimiConfiguration:
+    """Configuration for Kimi API.
 
     Attributes:
-        api_key: The Anthropic API key.
+        api_key: The Kimi API key.
 
     """
 
@@ -47,11 +47,11 @@ class AppConfiguration:
     """Centralized application configuration.
 
     Attributes:
-        anthropic: Anthropic-specific configuration.
+        kimi: Kimi-specific configuration.
 
     """
 
-    anthropic: AnthropicConfiguration
+    kimi: KimiConfiguration
 
 
 def load_configuration() -> AppConfiguration:
@@ -62,7 +62,7 @@ def load_configuration() -> AppConfiguration:
 
     """
     return AppConfiguration(
-        anthropic=AnthropicConfiguration(
-            api_key=get_env_or_raise("ANTHROPIC_API_KEY"),
+        kimi=KimiConfiguration(
+            api_key=get_env_or_raise("KIMI_API_KEY"),
         ),
     )
