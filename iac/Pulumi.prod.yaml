@@ -2,3 +2,4 @@ encryptionsalt: v1:ncWwFChg9qs=:v1:3zZfxb3C+pdhGBYY:rsPbxEhhrJGsPKR9Tef/aXmHZpwR
 config:
   agent-hub:AGENT_HUB_KIMI_API_KEY:
     secure: v1:9nhcwjydT+k93/nG:YqePau/vuYy9WWSS21HTdQdMXPOI6IbuEyJ0QTpI0L5eggY1gSraDxvNFQ9Igbnif2pqH3mjwpi+hff908oGA1lQ2g==
+  agent-hub:AGENT_HUB_LOGGING_TYPE: structured
