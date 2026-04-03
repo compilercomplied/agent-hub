@@ -8,6 +8,7 @@ from __future__ import annotations
 import logging
 from typing import Annotated, Any
 
+import structlog
 from fastapi import FastAPI
 from langchain.agents import create_agent
 from langchain_openai import ChatOpenAI
@@ -15,17 +16,20 @@ from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import TypedDict
 
 from src.config import load_configuration
+from src.library.fastapi.logging_middleware import logging_middleware
+from src.logging_config import setup_logging
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger: logging.Logger = logging.getLogger(__name__)
-
-# Load configuration
+# Load configuration and setup logging
 try:
     config = load_configuration()
-    logger.info("Configuration loaded successfully")
+    setup_logging(config.logging)
+    logger = structlog.get_logger(__name__)
+    logger.info("Configuration initialized")
 except Exception:
-    logger.exception("Failed to load configuration")
+    # Fallback to standard logging if configuration fails
+    logging.basicConfig(level=logging.INFO)
+    fallback_logger = logging.getLogger(__name__)
+    fallback_logger.exception("Failed to load configuration")
     raise
 
 app: FastAPI = FastAPI(
@@ -33,6 +37,9 @@ app: FastAPI = FastAPI(
     description="API for agent orchestration and prompt processing",
     version="1.0.0",
 )
+
+# Register middleware
+app.middleware("http")(logging_middleware)
 
 
 class AgentContext(TypedDict):
@@ -47,7 +54,7 @@ model = ChatOpenAI(
 )
 
 agent = create_agent(model, tools=[], context_schema=AgentContext)
-logger.info("Agent initialized successfully")
+logger.info("Agent initialized")
 
 
 class PromptRequest(BaseModel):

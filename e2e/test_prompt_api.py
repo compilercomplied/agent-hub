@@ -6,6 +6,8 @@ black-box testing without importing the application code.
 
 from __future__ import annotations
 
+import time
+
 import pytest
 
 from e2e.client import create_client
@@ -14,7 +16,8 @@ from e2e.client import create_client
 class TestPromptAPI:
     """Test suite for the /api/v1/prompt endpoint."""
 
-    def test_prompt_endpoint_returns_success(self) -> None:
+    @staticmethod
+    def test_prompt_endpoint_returns_success() -> None:
         """Test that the prompt endpoint returns 'E2E_SUCCESS'.
 
         This test follows the arrange-act-assert pattern:
@@ -37,7 +40,8 @@ class TestPromptAPI:
 
         client.close()
 
-    def test_prompt_endpoint_accepts_valid_prompt(self) -> None:
+    @staticmethod
+    def test_prompt_endpoint_accepts_valid_prompt() -> None:
         """Test that the endpoint accepts various valid prompt strings.
 
         This test verifies that different types of valid prompts
@@ -62,7 +66,8 @@ class TestPromptAPI:
 
         client.close()
 
-    def test_prompt_endpoint_accepts_multiline_prompt(self) -> None:
+    @staticmethod
+    def test_prompt_endpoint_accepts_multiline_prompt() -> None:
         """Test that the endpoint accepts multiline prompts.
 
         This test verifies that prompts containing newlines
@@ -84,7 +89,8 @@ class TestPromptAPI:
 
         client.close()
 
-    def test_prompt_endpoint_requires_prompt_field(self) -> None:
+    @staticmethod
+    def test_prompt_endpoint_requires_prompt_field() -> None:
         """Test that the endpoint requires the prompt field.
 
         This test verifies that requests without a prompt field
@@ -102,7 +108,8 @@ class TestPromptAPI:
 
         client.close()
 
-    def test_prompt_endpoint_rejects_empty_prompt(self) -> None:
+    @staticmethod
+    def test_prompt_endpoint_rejects_empty_prompt() -> None:
         """Test that the endpoint rejects empty prompt strings.
 
         This test verifies validation of the prompt field.
@@ -119,7 +126,8 @@ class TestPromptAPI:
 
         client.close()
 
-    def test_prompt_endpoint_returns_json(self) -> None:
+    @staticmethod
+    def test_prompt_endpoint_returns_json() -> None:
         """Test that the endpoint returns a valid JSON response.
 
         This test verifies the response format and content type.
@@ -144,7 +152,8 @@ class TestPromptAPI:
 class TestHealthEndpoint:
     """Test suite for the health check endpoint."""
 
-    def test_health_endpoint_returns_healthy_status(self) -> None:
+    @staticmethod
+    def test_health_endpoint_returns_healthy_status() -> None:
         """Test that the health endpoint returns a healthy status.
 
         This verifies the health check endpoint is operational.
@@ -168,9 +177,11 @@ def _wait_for_api() -> None:
     """Wait for the API to be ready before running tests.
 
     This fixture ensures the API is available before tests execute.
-    """
-    import time
 
+    Raises:
+        RuntimeError: If the API does not become ready in time.
+
+    """
     client = create_client()
     max_retries = 30
     retry_delay = 1
@@ -181,7 +192,7 @@ def _wait_for_api() -> None:
             if response.status_code == 200:
                 client.close()
                 return
-        except Exception:  # noqa: S110
+        except Exception:  # noqa: BLE001, S110
             pass
 
         if attempt < max_retries - 1:

@@ -64,26 +64,19 @@ pytest e2e/ -v
 
 ## Code Quality
 
-### Type Checking
+### Static Analysis
 
-The project uses `basedpyright` for strict type checking. The application will not build or run if there are type errors.
+The project uses a shared static analysis script that runs both `ruff` for linting and `basedpyright` for strict type checking.
 
 ```bash
-# Run strict type check
+# Run full static analysis (linting + type checking)
+mise run static-analysis
+
+# Auto-fix linting issues
+mise run "static-analysis:fix"
+
+# Run type check only
 mise run check:types
-```
-
-### Linting and Formatting
-
-```bash
-# Check code
-ruff check .
-
-# Format code
-ruff format .
-
-# Auto-fix issues
-ruff check --fix .
 ```
 
 ## API Endpoints

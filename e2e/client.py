@@ -5,10 +5,11 @@ of the API without importing the application code.
 """
 
 from __future__ import annotations
-from collections.abc import Generator
-import os
-import httpx
 
+import os
+from collections.abc import Generator
+
+import httpx
 
 
 def get_base_url() -> str:

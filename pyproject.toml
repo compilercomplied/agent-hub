@@ -11,6 +11,7 @@ dependencies = [
     "langchain",
     "langchain-openai",
     "langgraph",
+    "structlog",
 ]
 
 [project.optional-dependencies]

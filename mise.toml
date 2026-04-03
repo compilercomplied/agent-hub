@@ -9,6 +9,14 @@ node = "latest"
 description = "Run end-to-end tests using Docker Compose"
 run = "scripts/run-e2e.sh"
 
+[tasks.static-analysis]
+description = "Run static analysis using shared script"
+run = "scripts/static-analysis.sh"
+
+[tasks."static-analysis:fix"]
+description = "Run static analysis and apply safe fixes"
+run = "uv run ruff check . --fix"
+
 [tasks."check:types"]
 description = "Run strict type checking"
 run = "uv run basedpyright"
