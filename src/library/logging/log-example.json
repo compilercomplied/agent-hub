@@ -1,0 +1,17 @@
+[
+  {
+    "message": "Hello World",
+    "template": "Hello %s",
+    "logger": "src.main",
+    "level": "info",
+    "timestamp": "2026-04-03T20:07:53.783437Z"
+  },
+  {
+    "message": "configuration_loaded",
+    "template": "configuration_loaded",
+    "status": "success",
+    "logger": "src.main",
+    "level": "info",
+    "timestamp": "2026-04-03T20:07:53.680681Z"
+  }
+]

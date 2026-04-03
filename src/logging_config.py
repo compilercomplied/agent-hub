@@ -6,6 +6,11 @@ from typing import TYPE_CHECKING, Any
 
 import structlog
 
+from src.library.logging.processors import (
+    preserve_log_template,
+    rename_event_to_message,
+)
+
 if TYPE_CHECKING:
     from src.config import LoggingConfiguration
 
@@ -22,6 +27,7 @@ def setup_logging(config: LoggingConfiguration) -> None:
         structlog.contextvars.merge_contextvars,
         structlog.stdlib.add_logger_name,
         structlog.stdlib.add_log_level,
+        preserve_log_template,  # Preserve the template BEFORE it is rendered
         structlog.stdlib.PositionalArgumentsFormatter(),
         structlog.processors.TimeStamper(fmt="iso"),
         structlog.processors.StackInfoRenderer(),
@@ -49,6 +55,7 @@ def setup_logging(config: LoggingConfiguration) -> None:
         foreign_pre_chain=shared_processors,
         processors=[
             structlog.stdlib.ProcessorFormatter.remove_processors_meta,
+            rename_event_to_message,  # Final rename of 'event' to 'message'
             renderer,
         ],
     )

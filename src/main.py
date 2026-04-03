@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import TypedDict
 
 from src.config import load_configuration
+from src.library.fastapi.logging_middleware import logging_middleware
 from src.logging_config import setup_logging
 
 # Load configuration and setup logging
@@ -23,7 +24,7 @@ try:
     config = load_configuration()
     setup_logging(config.logging)
     logger = structlog.get_logger(__name__)
-    logger.info("configuration_loaded", status="success")
+    logger.info("Configuration initialized")
 except Exception:
     # Fallback to standard logging if configuration fails
     logging.basicConfig(level=logging.INFO)
@@ -36,6 +37,9 @@ app: FastAPI = FastAPI(
     description="API for agent orchestration and prompt processing",
     version="1.0.0",
 )
+
+# Register middleware
+app.middleware("http")(logging_middleware)
 
 
 class AgentContext(TypedDict):
@@ -50,7 +54,7 @@ model = ChatOpenAI(
 )
 
 agent = create_agent(model, tools=[], context_schema=AgentContext)
-logger.info("agent_initialized", status="success")
+logger.info("Agent initialized")
 
 
 class PromptRequest(BaseModel):
