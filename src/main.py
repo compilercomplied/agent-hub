@@ -47,10 +47,11 @@ class AgentContext(TypedDict):
 
 
 model = ChatOpenAI(
-    model="kimi-k2.5",
-    api_key=SecretStr(config.kimi.api_key),
-    base_url="https://api.moonshot.ai/v1",
+    model="deepseek-chat",
+    api_key=SecretStr(config.deepseek.api_key),
+    base_url="https://api.deepseek.com",
     timeout=30,
+    max_retries=5,
 )
 
 agent = create_agent(model, tools=[], context_schema=AgentContext)

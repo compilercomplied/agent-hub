@@ -1,5 +1,5 @@
 encryptionsalt: v1:ncWwFChg9qs=:v1:3zZfxb3C+pdhGBYY:rsPbxEhhrJGsPKR9Tef/aXmHZpwReg==
 config:
-  agent-hub:AGENT_HUB_KIMI_API_KEY:
-    secure: v1:9nhcwjydT+k93/nG:YqePau/vuYy9WWSS21HTdQdMXPOI6IbuEyJ0QTpI0L5eggY1gSraDxvNFQ9Igbnif2pqH3mjwpi+hff908oGA1lQ2g==
+  agent-hub:AGENT_HUB_DEEPSEEK_API_KEY:
+    secure: v1:2QKnqObI9wiooxNd:vC8fvJgbfB2GcpMnCuvasOwOM+8e8PKPh+AvcFu7xXLC7yK2fCoJ2c5MxiaHFWnJ2ihu
   agent-hub:AGENT_HUB_LOGGING_TYPE: structured
