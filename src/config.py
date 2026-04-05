@@ -6,11 +6,11 @@ from typing import Literal
 
 
 @dataclass(frozen=True)
-class KimiConfiguration:
-    """Configuration for Kimi API.
+class DeepSeekConfiguration:
+    """Configuration for DeepSeek API.
 
     Attributes:
-        api_key: The Kimi API key.
+        api_key: The DeepSeek API key.
 
     """
 
@@ -60,12 +60,12 @@ class AppConfiguration:
     """Centralized application configuration.
 
     Attributes:
-        kimi: Kimi-specific configuration.
+        deepseek: DeepSeek-specific configuration.
         logging: Logging configuration.
 
     """
 
-    kimi: KimiConfiguration
+    deepseek: DeepSeekConfiguration
     logging: LoggingConfiguration
 
 
@@ -87,8 +87,8 @@ def load_configuration() -> AppConfiguration:
         raise ConfigurationError(msg)
 
     return AppConfiguration(
-        kimi=KimiConfiguration(
-            api_key=get_env_or_raise("KIMI_API_KEY"),
+        deepseek=DeepSeekConfiguration(
+            api_key=get_env_or_raise("DEEPSEEK_API_KEY"),
         ),
         logging=LoggingConfiguration(
             type=logging_type,  # type: ignore[arg-type]
