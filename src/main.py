@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field, SecretStr
 from typing_extensions import TypedDict
 
 from src.config import load_configuration
+from src.k8s.manager import K8sManager
 from src.library.fastapi.logging_middleware import logging_middleware
 from src.logging_config import setup_logging
 
@@ -25,6 +26,8 @@ try:
     setup_logging(config.logging)
     logger = structlog.get_logger(__name__)
     logger.info("Configuration initialized")
+    k8s_manager = K8sManager(config.k8s)
+    logger.info("K8s Manager initialized")
 except Exception:
     # Fallback to standard logging if configuration fails
     logging.basicConfig(level=logging.INFO)
@@ -121,3 +124,43 @@ async def health_check() -> dict[str, str]:
 
     """
     return {"status": "healthy"}
+
+
+class K8sIntegrationResponse(BaseModel):
+    """Response model for K8s integration test.
+
+    Attributes:
+        pod_name: The name of the pod created.
+        status: The final status of the pod execution.
+
+    """
+
+    pod_name: str
+    status: str
+
+
+@app.post(
+    "/api/v1/test-k8s-integration",
+    response_model=K8sIntegrationResponse,
+    summary="Test K8s integration",
+    description="Deploys a test container in K8s to verify integration",
+)
+async def test_k8s_integration() -> K8sIntegrationResponse:
+    """Test K8s integration by deploying a dummy pod.
+
+    Returns:
+        K8sIntegrationResponse: Status of the integration test.
+
+    """
+    logger.info("Testing K8s integration")
+    k8s_manager.validate_config()
+
+    task = "echo 'K8s integration test successful'"
+    pod_name = k8s_manager.create_task(task)
+
+    try:
+        k8s_manager.watch_task(pod_name)
+        return K8sIntegrationResponse(pod_name=pod_name, status="succeeded")
+    except RuntimeError as e:
+        logger.exception("K8s integration test failed", pod=pod_name)
+        return K8sIntegrationResponse(pod_name=pod_name, status=f"failed: {e}")

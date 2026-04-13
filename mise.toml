@@ -7,6 +7,10 @@ node = "latest"
 
 [tasks."e2e:docker"]
 description = "Run end-to-end tests using Docker Compose"
+run = "scripts/run-e2e-in-docker.sh"
+
+[tasks."test:e2e"]
+description = "Run end-to-end tests locally"
 run = "scripts/run-e2e.sh"
 
 [tasks.static-analysis]
