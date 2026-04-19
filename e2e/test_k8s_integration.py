@@ -29,8 +29,7 @@ class TestK8sIntegrationAPI:
         data = response.json()
         assert "pod_name" in data
         assert "status" in data
-        # We don't assert "succeeded" because it might fail with dummy config
+        assert data["status"].startswith("succeeded")
         assert isinstance(data["pod_name"], str)
-        assert isinstance(data["status"], str)
 
         client.close()

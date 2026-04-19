@@ -30,7 +30,7 @@ def get_client() -> Generator[httpx.Client, None, None]:
 
     """
     base_url = get_base_url()
-    with httpx.Client(base_url=base_url, timeout=30.0) as client:
+    with httpx.Client(base_url=base_url, timeout=120.0) as client:
         yield client
 
 
@@ -41,4 +41,4 @@ def create_client() -> httpx.Client:
         httpx.Client: A configured HTTP client instance.
 
     """
-    return httpx.Client(base_url=get_base_url(), timeout=30.0)
+    return httpx.Client(base_url=get_base_url(), timeout=120.0)

@@ -6,19 +6,17 @@ This module provides a REST API endpoint for processing prompts.
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Any
 
 import structlog
 from fastapi import FastAPI
-from langchain.agents import create_agent
-from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, Field, SecretStr
-from typing_extensions import TypedDict
 
+from src.agents.factory import create_app_agent
 from src.config import load_configuration
 from src.k8s.manager import K8sManager
 from src.library.fastapi.logging_middleware import logging_middleware
 from src.logging_config import setup_logging
+from src.routes.healthchecks import router as health_router
+from src.routes.prompt import router as prompt_router
 
 # Load configuration and setup logging
 try:
@@ -28,6 +26,8 @@ try:
     logger.info("Configuration initialized")
     k8s_manager = K8sManager(config.k8s)
     logger.info("K8s Manager initialized")
+    agent = create_app_agent(config)
+    logger.info("Agent initialized with tools")
 except Exception:
     # Fallback to standard logging if configuration fails
     logging.basicConfig(level=logging.INFO)
@@ -41,126 +41,13 @@ app: FastAPI = FastAPI(
     version="1.0.0",
 )
 
+# Store global instances in app state for use in routes
+app.state.agent = agent
+app.state.k8s_manager = k8s_manager
+
 # Register middleware
 app.middleware("http")(logging_middleware)
 
-
-class AgentContext(TypedDict):
-    """Context schema for the agent."""
-
-
-model = ChatOpenAI(
-    model="deepseek-chat",
-    api_key=SecretStr(config.deepseek.api_key),
-    base_url="https://api.deepseek.com",
-    timeout=30,
-    max_retries=5,
-)
-
-agent = create_agent(model, tools=[], context_schema=AgentContext)
-logger.info("Agent initialized")
-
-
-class PromptRequest(BaseModel):
-    """Request model for prompt endpoint.
-
-    Attributes:
-        prompt: The prompt string to be processed.
-
-    """
-
-    prompt: Annotated[
-        str,
-        Field(
-            description="The prompt text to process",
-            min_length=1,
-        ),
-    ]
-
-
-class PromptResponse(BaseModel):
-    """Response model for prompt endpoint.
-
-    Attributes:
-        message: The response message.
-
-    """
-
-    message: str
-
-
-@app.post(
-    "/api/v1/prompt",
-    response_model=PromptResponse,
-    summary="Process a prompt",
-    description="Accepts a prompt string and returns a response",
-)
-async def process_prompt(request: PromptRequest) -> PromptResponse:
-    """Process a prompt request.
-
-    Args:
-        request: The prompt request containing the prompt text.
-
-    Returns:
-        PromptResponse: A response containing the message.
-
-    """
-    # Use Any to satisfy complex library-defined type requirements for ainvoke
-    inputs: Any = {
-        "messages": [{"role": "user", "content": request.prompt}]
-    }
-    result = await agent.ainvoke(inputs)
-    # The last message in the list is the agent's response
-    final_message = result["messages"][-1].content
-    return PromptResponse(message=str(final_message))
-
-
-@app.get("/health", summary="Health check endpoint")
-async def health_check() -> dict[str, str]:
-    """Health check endpoint.
-
-    Returns:
-        dict: Status information.
-
-    """
-    return {"status": "healthy"}
-
-
-class K8sIntegrationResponse(BaseModel):
-    """Response model for K8s integration test.
-
-    Attributes:
-        pod_name: The name of the pod created.
-        status: The final status of the pod execution.
-
-    """
-
-    pod_name: str
-    status: str
-
-
-@app.post(
-    "/api/v1/test-k8s-integration",
-    response_model=K8sIntegrationResponse,
-    summary="Test K8s integration",
-    description="Deploys a test container in K8s to verify integration",
-)
-async def test_k8s_integration() -> K8sIntegrationResponse:
-    """Test K8s integration by deploying a dummy pod.
-
-    Returns:
-        K8sIntegrationResponse: Status of the integration test.
-
-    """
-    logger.info("Testing K8s integration")
-    k8s_manager.validate_config()
-
-    task = "echo 'K8s integration test successful'"
-    pod_name = k8s_manager.create_task(task)
-
-    try:
-        k8s_manager.watch_task(pod_name)
-        return K8sIntegrationResponse(pod_name=pod_name, status="succeeded")
-    except RuntimeError as e:
-        logger.exception("K8s integration test failed", pod=pod_name)
-        return K8sIntegrationResponse(pod_name=pod_name, status=f"failed: {e}")
+# Register routers
+app.include_router(health_router)
+app.include_router(prompt_router)
