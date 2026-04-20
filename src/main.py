@@ -10,13 +10,13 @@ import logging
 import structlog
 from fastapi import FastAPI
 
-from src.agents.factory import create_app_agent
 from src.config import load_configuration
 from src.k8s.manager import K8sManager
 from src.library.fastapi.logging_middleware import logging_middleware
 from src.logging_config import setup_logging
 from src.routes.healthchecks import router as health_router
 from src.routes.prompt import router as prompt_router
+from src.session import SessionManager
 
 # Load configuration and setup logging
 try:
@@ -26,8 +26,8 @@ try:
     logger.info("Configuration initialized")
     k8s_manager = K8sManager(config.k8s)
     logger.info("K8s Manager initialized")
-    agent = create_app_agent(config)
-    logger.info("Agent initialized with tools")
+    session_manager = SessionManager(k8s_manager)
+    logger.info("Session Manager initialized")
 except Exception:
     # Fallback to standard logging if configuration fails
     logging.basicConfig(level=logging.INFO)
@@ -42,8 +42,8 @@ app: FastAPI = FastAPI(
 )
 
 # Store global instances in app state for use in routes
-app.state.agent = agent
-app.state.k8s_manager = k8s_manager
+app.state.config = config
+app.state.session_manager = session_manager
 
 # Register middleware
 app.middleware("http")(logging_middleware)

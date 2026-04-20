@@ -1,3 +1,5 @@
+"""Agent factory for creating LangChain agents."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -7,9 +9,9 @@ from langchain_openai import ChatOpenAI
 from pydantic import SecretStr
 from typing_extensions import TypedDict
 
-from src.tools.agent_dev_environment.toolkit import get_agent_dev_tools
-
 if TYPE_CHECKING:
+    from langchain_core.tools import BaseTool
+
     from src.config import AppConfiguration
 
 
@@ -17,13 +19,15 @@ class AgentContext(TypedDict):
     """Context schema for the agent."""
 
 
-# Using Any because the agent return type from LangChain is complex
-# and varies depending on the tools and configuration used.
-def create_app_agent(config: AppConfiguration) -> Any:  # noqa: ANN401
-    """Create and configure the agent instance.
+def create_app_agent(
+    config: AppConfiguration,
+    tools: list[BaseTool],
+) -> Any:  # noqa: ANN401
+    """Create and configure the agent instance with specific tools.
 
     Args:
         config: The application configuration.
+        tools: The list of tools the agent can use.
 
     Returns:
         The configured agent instance.
@@ -36,6 +40,20 @@ def create_app_agent(config: AppConfiguration) -> Any:  # noqa: ANN401
         max_retries=5,
     )
 
+    system_prompt = (
+        "You are a helpful coding assistant with access to a "
+        "development environment. "
+        "You can run shell commands and list files using the provided "
+        "tools to perform tasks. "
+        "When asked to write code, clone repositories, or examine files, "
+        "use your tools appropriately. "
+        "You do NOT need to ask for a URL; the environment is already "
+        "configured for you."
+    )
+
     return create_agent(
-        model, tools=get_agent_dev_tools(), context_schema=AgentContext
+        model,
+        tools=tools,
+        context_schema=AgentContext,
+        system_prompt=system_prompt,
     )

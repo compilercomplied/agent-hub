@@ -1,14 +1,19 @@
+"""Route handlers for prompt-related endpoints."""
+
 from __future__ import annotations
 
-import asyncio
-import random
 from typing import TYPE_CHECKING, Any
 
 import structlog
 from fastapi import APIRouter, Request
 
+from src.agents.factory import create_app_agent
 from src.dtos.k8s import K8sIntegrationResponse
 from src.dtos.prompt import PromptRequest, PromptResponse
+from src.tools.agent_dev_environment.toolkit import get_agent_dev_tools
+
+if TYPE_CHECKING:
+    from src.session import SessionManager
 
 logger = structlog.get_logger(__name__)
 router = APIRouter()
@@ -23,8 +28,7 @@ router = APIRouter()
 async def process_prompt(
     request: PromptRequest, fastapi_request: Request
 ) -> PromptResponse:
-
-    """Process a prompt request.
+    """Process a prompt request by creating an isolated session.
 
     Args:
         request: The prompt request containing the prompt text.
@@ -34,13 +38,31 @@ async def process_prompt(
         PromptResponse: A response containing the message.
 
     """
-    agent = fastapi_request.app.state.agent
-    # Use Any to satisfy complex library-defined type requirements for ainvoke
-    inputs: Any = {"messages": [{"role": "user", "content": request.prompt}]}
-    result = await agent.ainvoke(inputs)
-    # The last message in the list is the agent's response
-    final_message = result["messages"][-1].content
-    return PromptResponse(message=str(final_message))
+    session_manager: SessionManager = fastapi_request.app.state.session_manager
+    config = fastapi_request.app.state.config
+
+    # 1. Create an isolated session (K8s pod)
+    session = await session_manager.create_session()
+
+    try:
+        # 2. Get tools configured for this session's base_url
+        tools = get_agent_dev_tools(base_url=session.base_url)
+
+        # 3. Create a one-off agent for this session
+        agent = create_app_agent(config, tools)
+
+        # 4. Invoke the agent
+        inputs: Any = {
+            "messages": [{"role": "user", "content": request.prompt}]
+        }
+        result = await agent.ainvoke(inputs)
+
+        # 5. Extract and return response (create_agent returns message list)
+        final_message = result["messages"][-1].content
+        return PromptResponse(message=str(final_message))
+    finally:
+        # 6. Cleanup session
+        session_manager.delete_session(session)
 
 
 @router.post(
@@ -52,9 +74,7 @@ async def process_prompt(
 async def test_k8s_integration(
     fastapi_request: Request,
 ) -> K8sIntegrationResponse:
-    """Test K8s integration by deploying a dummy pod.
-
-    Deploys a test container and uses the agent to clone this repo.
+    """Test K8s integration by utilizing the session manager.
 
     Args:
         fastapi_request: The FastAPI request object.
@@ -63,32 +83,24 @@ async def test_k8s_integration(
         K8sIntegrationResponse: Status of the integration test.
 
     """
-    agent = fastapi_request.app.state.agent
-    k8s_manager = fastapi_request.app.state.k8s_manager
+    session_manager: SessionManager = fastapi_request.app.state.session_manager
+    config = fastapi_request.app.state.config
 
-    logger.info("Testing K8s integration")
-    k8s_manager.validate_config()
+    logger.info("Testing K8s integration via SessionManager")
 
-    # The agent-dev-environment image starts a server.
-    # Randomize port for hostNetwork: True
-    random_port = random.randint(10000, 20000)  # noqa: S311
-    pod_name = k8s_manager.create_task(
-        "echo 'Starting agent-dev-environment'", port=random_port
-    )
+    # 1. Create session
+    session = await session_manager.create_session()
 
     try:
-        k8s_manager.watch_task(pod_name)
-        # Give the agent-dev-environment server a few seconds to fully start
-        await asyncio.sleep(10)
-        node_ip = k8s_manager.get_node_ip()
-        base_url = f"http://{node_ip}:{random_port}"
+        # 2. Configure agent for session
+        tools = get_agent_dev_tools(base_url=session.base_url)
+        agent = create_app_agent(config, tools)
 
-        # Ask the agent to clone the repo
+        # 3. Ask the agent to clone the repo
         repo_url = "https://github.com/compilercomplied/agent-hub.git"
         prompt = (
             f"Please clone the repository {repo_url} "
-            f"into /tmp/agent-hub using the shell_run tool. "
-            f"The base_url is {base_url}."
+            f"into /tmp/agent-hub using the shell_run tool."
         )
 
         inputs: Any = {"messages": [{"role": "user", "content": prompt}]}
@@ -97,8 +109,18 @@ async def test_k8s_integration(
 
         logger.info("Agent integration test completed", response=agent_response)
         return K8sIntegrationResponse(
-            pod_name=pod_name, status=f"succeeded: {agent_response}"
+            pod_name=session.pod_name,
+            status=f"succeeded: {agent_response}",
         )
-    except RuntimeError as e:
-        logger.exception("K8s integration test failed", pod=pod_name)
-        return K8sIntegrationResponse(pod_name=pod_name, status=f"failed: {e}")
+    except Exception as e:
+        logger.exception(
+            "K8s integration test failed",
+            pod=session.pod_name,
+        )
+        return K8sIntegrationResponse(
+            pod_name=session.pod_name,
+            status=f"failed: {e}",
+        )
+    finally:
+        # 4. Cleanup session
+        session_manager.delete_session(session)

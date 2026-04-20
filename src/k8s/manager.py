@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import base64
-import json
 import os
 import time
 from typing import TYPE_CHECKING, Any, cast
@@ -11,6 +10,8 @@ from typing import TYPE_CHECKING, Any, cast
 import structlog
 import yaml
 from kubernetes import client, config
+
+from src.k8s.configmap import load_agent_dev_env_config
 
 if TYPE_CHECKING:
     from src.config import K8sConfiguration
@@ -54,23 +55,16 @@ class K8sManager:
         Returns:
             The name of the created pod.
         """
-        # 1. Fetch the image from the registry configmap
-        cm_name = "agent-dev-environment-configmap"
-        cm = cast("Any", self.v1.read_namespaced_config_map(cm_name, self.ns))
-        templates = json.loads(cm.data.get("templates", "{}"))
-        agent_tmpl = templates.get("agent-dev-environment", {})
-        default_img = "ghcr.io/compilercomplied/agent-dev-environment"
-        image = agent_tmpl.get("image", default_img)
+        # 1. Fetch the config and merged environment variables
+        env_config = load_agent_dev_env_config(
+            self.v1, self.ns, overrides, port
+        )
+        image = env_config.image
 
         # 2. Prepare the pod manifest
         name = f"agent-{os.urandom(4).hex()}"
         logger.info("Deploying agent task", pod=name, image=image, port=port)
 
-        env = [{"name": k, "value": v} for k, v in (overrides or {}).items()]
-        # Set the agent port
-        env.append({"name": "AGENT_DEV_ENVIRONMENT_PORT", "value": str(port)})
-
-        config_map_ref = {"name": "agent-dev-environment-configmap"}
         pod_manifest = {
             "apiVersion": "v1",
             "kind": "Pod",
@@ -78,15 +72,13 @@ class K8sManager:
             "spec": {
                 "restartPolicy": "Never",
                 "hostNetwork": True,
-                "imagePullSecrets": [{"name": "ghcr-secret-cddca01f"}],
+                "imagePullSecrets": [{"name": "ghcr-secret-867576aa"}],
                 "containers": [{
                     "name": "worker",
                     "image": image,
-                    "env": env,
+                    "env": env_config.env_vars,
                     "envFrom": [
                         {"secretRef": {"name": "agent-dev-environment-secret"}},
-                        {"configMapRef": config_map_ref},
-                        {"secretRef": {"name": "dev-environment-secrets"}},
                     ],
                 }],
             },
