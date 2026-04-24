@@ -10,8 +10,9 @@ if ! command -v uv &> /dev/null; then
     export PATH="$HOME/.local/bin:$PATH"
 fi
 
-echo "--- Running Ruff (Linting) ---"
-uv run ruff check .
+
+echo "--- Running Ruff with --fix (Linting) ---"
+uv run ruff check . --fix
 
 echo ""
 echo "--- Running Basedpyright (Type Checking) ---"

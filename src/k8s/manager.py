@@ -68,7 +68,10 @@ class K8sManager:
         pod_manifest = {
             "apiVersion": "v1",
             "kind": "Pod",
-            "metadata": {"name": name, "labels": {"app": "agent-worker"}},
+            "metadata": {
+                "name": name,
+                "labels": {"app": "agent-dev-environment"},
+            },
             "spec": {
                 "restartPolicy": "Never",
                 "hostNetwork": True,

@@ -1,166 +1,36 @@
-# Agent Hub API
+# Agent Hub
 
-A FastAPI-based REST API for agent orchestration and prompt processing.
+Agent hub is an AI agent orchestrator. It integrates with LLM http APIs using the ReAct pattern to enable fully autonomous agent workflows with Human In The Loop checks.
 
-## Features
+These are the AI workloads the project is able to run:
+ - Autonomous coding tasks. To do this, agent-hub deploys a pod using the [agent-dev-environment](https://github.com/compilercomplied/agent-dev-environment) headless service. This service contains all the configuration needed for a sandboxed environment that can be manipulated and interacted with through http.
 
-- POST endpoint at `/api/v1/prompt` for prompt processing
-- Health check endpoint at `/health`
-- Comprehensive end-to-end testing
-- Strict type checking with `basedpyright`
-- Docker containerization with multi-stage builds and type safety enforcement
-- Strict code quality enforcement with Ruff
-- Automated CI/CD with GitHub Actions
+# Rutime view
 
-## Getting Started
+This is deployed through pulumi and github workflows. The main non-obvious bits are:
+ - Secrets. There are a few important secrets, you can check these in the pulumi templates. KUBECONFIG is encoded as base64 and injected so agent-hub can deploy pods with containerized environments.
+ - Containerized workloads. agent-hub acts as a kubernetes orchestrator. It deploys pods on demand based on user tasks.
+ - Containerized workload configuration. agent-hub does not configure the underlying headless services or kubernetes components. It merely deploys them.
 
-### Prerequisites
 
-- Python 3.12+
-- Docker and Docker Compose
-- uv (recommended for dependency management)
+# Development
+## Mise
 
-### Local Development
+[mise](https://mise.jdx.dev/) is used to manage tool versions and abstract common tasks. It is installed in the Docker image and available at runtime.
 
-1. Install dependencies:
+## Prerequisites
+
+- [mise](https://mise.jdx.dev/) installed.
+
+## Running locally
+
+On your first run:
 ```bash
-uv sync --all-extras --dev
+# Install tools
+mise install
+
+# Configure project
+mise setup-project
 ```
 
-2. Run the application with type checking:
-```bash
-mise run start
-```
-
-3. Access the API:
-- API: http://localhost:8000
-- Documentation: http://localhost:8000/docs
-- Health check: http://localhost:8000/health
-
-## Testing
-
-### Run E2E Tests with Docker
-
-```bash
-./scripts/run-e2e.sh
-```
-
-Or manually:
-```bash
-docker compose -f docker-compose.e2e.yaml up --abort-on-container-exit
-```
-
-### Run Tests Locally
-
-```bash
-# Start the API
-export AGENT_HUB_DEEPSEEK_API_KEY=your_api_key_here
-uvicorn src.main:app &
-
-# Run tests
-export API_BASE_URL=http://localhost:8000
-pytest e2e/ -v
-```
-
-## Code Quality
-
-### Static Analysis
-
-The project uses a shared static analysis script that runs both `ruff` for linting and `basedpyright` for strict type checking.
-
-```bash
-# Run full static analysis (linting + type checking)
-mise run static-analysis
-
-# Auto-fix linting issues
-mise run "static-analysis:fix"
-
-# Run type check only
-mise run check:types
-```
-
-## API Endpoints
-
-### POST /api/v1/prompt
-
-Process a prompt and receive a response.
-
-**Request:**
-```json
-{
-  "prompt": "Your prompt text here"
-}
-```
-
-**Response:**
-```json
-{
-  "message": "hello world"
-}
-```
-
-### GET /health
-
-Health check endpoint.
-
-**Response:**
-```json
-{
-  "status": "healthy"
-}
-```
-
-## Project Structure
-
-```
-.
-├── .github/workflows/    # CI/CD workflows
-├── e2e/                  # End-to-end tests
-│   ├── client.py        # HTTP client configuration
-│   └── test_prompt_api.py
-├── scripts/             # Utility scripts
-│   └── run-e2e.sh      # E2E test runner
-├── src/                 # Application source code
-│   ├── __init__.py
-│   └── main.py         # FastAPI application
-├── Dockerfile           # Multi-stage Docker build with type-checking
-├── docker-compose.e2e.yaml
-├── pyproject.toml       # Project configuration
-├── pyrightconfig.json   # Strict type-checking configuration
-├── ruff.toml           # Ruff configuration
-├── mise.toml           # Task runner configuration
-└── README.md
-```
-
-## Docker
-
-### Build and Run
-
-The Docker build includes a mandatory strict type check step. If there are any type errors, the build will fail.
-
-```bash
-# Build the image (includes type check)
-docker build -t agent-hub-api .
-
-# Run the container
-docker run -p 8000:8000 agent-hub-api
-```
-
-### Multi-Stage Builds
-
-The Dockerfile includes multiple stages:
-- `base`: Base Python environment
-- `builder`: Dependency installation
-- `runtime`: Production runtime
-- `test`: Test execution environment
-
-## CI/CD
-
-GitHub Actions workflow runs automatically on pull requests:
-- Builds Docker images
-- Runs e2e tests
-- Performs code quality checks with Ruff
-
-## License
-
-MIT
+The project is aimed to be run through e2e tests. So you can use either e2e command in the mise.toml (running the e2e with or without docker).

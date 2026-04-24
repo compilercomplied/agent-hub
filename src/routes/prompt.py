@@ -5,14 +5,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 import structlog
-from fastapi import APIRouter, Request
+from fastapi import APIRouter
 
 from src.agents.factory import create_app_agent
 from src.dtos.k8s import K8sIntegrationResponse
-from src.dtos.prompt import PromptRequest, PromptResponse
+from src.dtos.prompt import PromptResponse
 from src.tools.agent_dev_environment.toolkit import get_agent_dev_tools
 
 if TYPE_CHECKING:
+    from fastapi import Request
+
+    from src.dtos.prompt import PromptRequest
     from src.session import SessionManager
 
 logger = structlog.get_logger(__name__)
@@ -41,28 +44,19 @@ async def process_prompt(
     session_manager: SessionManager = fastapi_request.app.state.session_manager
     config = fastapi_request.app.state.config
 
-    # 1. Create an isolated session (K8s pod)
     session = await session_manager.create_session()
 
-    try:
-        # 2. Get tools configured for this session's base_url
-        tools = get_agent_dev_tools(base_url=session.base_url)
+    tools = get_agent_dev_tools(base_url=session.base_url)
 
-        # 3. Create a one-off agent for this session
-        agent = create_app_agent(config, tools)
+    agent = create_app_agent(config, tools)
 
-        # 4. Invoke the agent
-        inputs: Any = {
-            "messages": [{"role": "user", "content": request.prompt}]
-        }
-        result = await agent.ainvoke(inputs)
+    inputs: Any = {
+        "messages": [{"role": "user", "content": request.prompt}]
+    }
+    result = await agent.ainvoke(inputs)
 
-        # 5. Extract and return response (create_agent returns message list)
-        final_message = result["messages"][-1].content
-        return PromptResponse(message=str(final_message))
-    finally:
-        # 6. Cleanup session
-        session_manager.delete_session(session)
+    final_message = result["messages"][-1].content
+    return PromptResponse(message=str(final_message))
 
 
 @router.post(
