@@ -12,6 +12,9 @@ dependencies = [
     "langchain-openai",
     "langgraph",
     "structlog",
+    "gdariodev-agent-dev-environment>=0.0.70b16",
+    "kubernetes",
+    "pyyaml",
 ]
 
 [project.optional-dependencies]

@@ -15,36 +15,50 @@ PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 # Change to project root
 cd "${PROJECT_ROOT}"
 
-echo -e "${YELLOW}Starting e2e test run...${NC}"
+echo -e "${YELLOW}Starting e2e test run locally...${NC}"
 
 # Loading environment variables from Pulumi
 echo -e "${YELLOW}Loading environment variables from Pulumi...${NC}"
 # source the script directly to export variables to the current shell
-source "${PROJECT_ROOT}/scripts/load-env.sh" || echo -e "${YELLOW}Warning: Could not load environment from Pulumi. Using existing shell environment.${NC}"
-
-# Generate a temporary env file for Docker Compose
-# This includes all variables starting with AGENT_HUB_
-env | grep '^AGENT_HUB_' > "${PROJECT_ROOT}/.env.docker" || true
+if ! source "${PROJECT_ROOT}/scripts/load-env.sh"; then
+    echo -e "${RED}Error: Failed to load environment from Pulumi. E2E tests require a valid local stack.${NC}"
+    exit 1
+fi
 
 # Function to cleanup on exit
 cleanup() {
     echo -e "\n${YELLOW}Cleaning up...${NC}"
-    rm -f "${PROJECT_ROOT}/.env.docker"
-    docker compose -f docker-compose.e2e.yaml down -v --remove-orphans 2>/dev/null || true
+    if [ -n "${API_PID:-}" ]; then
+        kill "${API_PID}" 2>/dev/null || true
+    fi
 }
 
 # Set trap to cleanup on script exit
 trap cleanup EXIT INT TERM
 
-# Build and run tests
-echo -e "${YELLOW}Building Docker images...${NC}"
-if ! docker compose -f docker-compose.e2e.yaml build; then
-    echo -e "${RED}Failed to build Docker images${NC}"
-    exit 1
-fi
+# Start API in the background
+echo -e "${YELLOW}Starting API in background...${NC}"
+uv run uvicorn src.main:app --port 8000 &
+API_PID=$!
 
-echo -e "${YELLOW}Starting services and running tests...${NC}"
-if docker compose -f docker-compose.e2e.yaml up --abort-on-container-exit --exit-code-from e2e-tests; then
+# Wait for API to be ready
+echo -e "${YELLOW}Waiting for API to be ready...${NC}"
+MAX_RETRIES=30
+for ((i=1; i<=MAX_RETRIES; i++)); do
+    if curl -s http://localhost:8000/health > /dev/null; then
+        echo -e "${GREEN}API is ready!${NC}"
+        break
+    fi
+    if [ $i -eq $MAX_RETRIES ]; then
+        echo -e "${RED}API did not become ready in time${NC}"
+        exit 1
+    fi
+    sleep 1
+done
+
+# Run pytest
+echo -e "${YELLOW}Running tests...${NC}"
+if uv run pytest e2e/ -v --tb=short --color=yes; then
     echo -e "${GREEN}✓ E2E tests passed successfully!${NC}"
     exit 0
 else

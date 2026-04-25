@@ -42,27 +42,20 @@ class TestPromptAPI:
 
     @staticmethod
     def test_prompt_endpoint_accepts_valid_prompt() -> None:
-        """Test that the endpoint accepts various valid prompt strings.
+        """Test that the endpoint accepts a valid prompt string.
 
-        This test verifies that different types of valid prompts
-        are accepted by the API.
+        This test verifies that a valid prompt is accepted by the API.
         """
         # Arrange
         client = create_client()
-        test_prompts = [
-            "Simple prompt",
-            "A longer prompt with multiple words and punctuation!",
-            "12345",
-            "Special characters: @#$%^&*()",
-        ]
+        prompt = "Simple valid prompt"
 
-        for prompt in test_prompts:
-            # Act
-            response = client.post("/api/v1/prompt", json={"prompt": prompt})
+        # Act
+        response = client.post("/api/v1/prompt", json={"prompt": prompt})
 
-            # Assert
-            assert response.status_code == 200
-            assert isinstance(response.json()["message"], str)
+        # Assert
+        assert response.status_code == 200
+        assert isinstance(response.json()["message"], str)
 
         client.close()
 

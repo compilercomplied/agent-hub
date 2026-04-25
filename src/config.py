@@ -56,17 +56,31 @@ def get_env_or_raise(key: str) -> str:
 
 
 @dataclass(frozen=True)
+class K8sConfiguration:
+    """Configuration for Kubernetes integration.
+
+    Attributes:
+        kubeconfig_base64: The base64-encoded kubeconfig.
+
+    """
+
+    kubeconfig_base64: str
+
+
+@dataclass(frozen=True)
 class AppConfiguration:
     """Centralized application configuration.
 
     Attributes:
         deepseek: DeepSeek-specific configuration.
         logging: Logging configuration.
+        k8s: Kubernetes configuration.
 
     """
 
     deepseek: DeepSeekConfiguration
     logging: LoggingConfiguration
+    k8s: K8sConfiguration
 
 
 def load_configuration() -> AppConfiguration:
@@ -92,5 +106,8 @@ def load_configuration() -> AppConfiguration:
         ),
         logging=LoggingConfiguration(
             type=logging_type,  # type: ignore[arg-type]
+        ),
+        k8s=K8sConfiguration(
+            kubeconfig_base64=get_env_or_raise("KUBECONFIG_BASE64"),
         ),
     )

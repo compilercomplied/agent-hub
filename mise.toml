@@ -5,40 +5,28 @@ ruff = "latest"
 pulumi = "latest"
 node = "latest"
 
-[tasks."e2e:docker"]
+[tasks."test:e2e-docker"]
 description = "Run end-to-end tests using Docker Compose"
+run = "scripts/run-e2e-in-docker.sh"
+
+[tasks."test:e2e"]
+description = "Run end-to-end tests locally"
 run = "scripts/run-e2e.sh"
 
 [tasks.static-analysis]
 description = "Run static analysis using shared script"
 run = "scripts/static-analysis.sh"
 
-[tasks."static-analysis:fix"]
-description = "Run static analysis and apply safe fixes"
-run = "uv run ruff check . --fix"
-
-[tasks."check:types"]
-description = "Run strict type checking"
-run = "uv run basedpyright"
-
-[tasks.start]
+[tasks.run]
 description = "Run the application with type checking"
 depends = ["check:types"]
 run = "uv run uvicorn src.main:app --reload"
 
-[tasks.install-packages]
-description = "Install all dependencies using uv"
-run = "uv sync --all-extras --dev"
-
-[tasks.setup-pulumi]
-description = "Setup Pulumi stacks and dependencies"
-run = """
-cd iac
-npm install
-pulumi stack init local || true
-pulumi stack init prod || true
-"""
-
 [tasks.setup-project]
 description = "Setup the project from scratch"
-depends = ["install-packages", "setup-pulumi"]
+run = """
+uv sync --all-extras --dev
+cd iac
+npm install
+pulumi stack select local
+"""

@@ -6,18 +6,17 @@ This module provides a REST API endpoint for processing prompts.
 from __future__ import annotations
 
 import logging
-from typing import Annotated, Any
 
 import structlog
 from fastapi import FastAPI
-from langchain.agents import create_agent
-from langchain_openai import ChatOpenAI
-from pydantic import BaseModel, Field, SecretStr
-from typing_extensions import TypedDict
 
 from src.config import load_configuration
+from src.k8s.manager import K8sManager
 from src.library.fastapi.logging_middleware import logging_middleware
 from src.logging_config import setup_logging
+from src.routes.healthchecks import router as health_router
+from src.routes.prompt import router as prompt_router
+from src.session import SessionManager
 
 # Load configuration and setup logging
 try:
@@ -25,6 +24,10 @@ try:
     setup_logging(config.logging)
     logger = structlog.get_logger(__name__)
     logger.info("Configuration initialized")
+    k8s_manager = K8sManager(config.k8s)
+    logger.info("K8s Manager initialized")
+    session_manager = SessionManager(k8s_manager)
+    logger.info("Session Manager initialized")
 except Exception:
     # Fallback to standard logging if configuration fails
     logging.basicConfig(level=logging.INFO)
@@ -38,86 +41,13 @@ app: FastAPI = FastAPI(
     version="1.0.0",
 )
 
+# Store global instances in app state for use in routes
+app.state.config = config
+app.state.session_manager = session_manager
+
 # Register middleware
 app.middleware("http")(logging_middleware)
 
-
-class AgentContext(TypedDict):
-    """Context schema for the agent."""
-
-
-model = ChatOpenAI(
-    model="deepseek-chat",
-    api_key=SecretStr(config.deepseek.api_key),
-    base_url="https://api.deepseek.com",
-    timeout=30,
-    max_retries=5,
-)
-
-agent = create_agent(model, tools=[], context_schema=AgentContext)
-logger.info("Agent initialized")
-
-
-class PromptRequest(BaseModel):
-    """Request model for prompt endpoint.
-
-    Attributes:
-        prompt: The prompt string to be processed.
-
-    """
-
-    prompt: Annotated[
-        str,
-        Field(
-            description="The prompt text to process",
-            min_length=1,
-        ),
-    ]
-
-
-class PromptResponse(BaseModel):
-    """Response model for prompt endpoint.
-
-    Attributes:
-        message: The response message.
-
-    """
-
-    message: str
-
-
-@app.post(
-    "/api/v1/prompt",
-    response_model=PromptResponse,
-    summary="Process a prompt",
-    description="Accepts a prompt string and returns a response",
-)
-async def process_prompt(request: PromptRequest) -> PromptResponse:
-    """Process a prompt request.
-
-    Args:
-        request: The prompt request containing the prompt text.
-
-    Returns:
-        PromptResponse: A response containing the message.
-
-    """
-    # Use Any to satisfy complex library-defined type requirements for ainvoke
-    inputs: Any = {
-        "messages": [{"role": "user", "content": request.prompt}]
-    }
-    result = await agent.ainvoke(inputs)
-    # The last message in the list is the agent's response
-    final_message = result["messages"][-1].content
-    return PromptResponse(message=str(final_message))
-
-
-@app.get("/health", summary="Health check endpoint")
-async def health_check() -> dict[str, str]:
-    """Health check endpoint.
-
-    Returns:
-        dict: Status information.
-
-    """
-    return {"status": "healthy"}
+# Register routers
+app.include_router(health_router)
+app.include_router(prompt_router)
