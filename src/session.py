@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import random
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
@@ -48,11 +47,10 @@ class SessionManager:
         logger.info("Creating new isolated session")
         self.k8s_manager.validate_config()
 
-        # Randomize port for hostNetwork: True
-        random_port = random.randint(10000, 20000)  # noqa: S311
+        port = 8080
         pod_name = self.k8s_manager.create_task(
             "Starting agent-dev-environment session",
-            port=random_port,
+            port=port,
         )
 
         try:
@@ -61,7 +59,7 @@ class SessionManager:
             await asyncio.sleep(10)
 
             node_ip = self.k8s_manager.get_node_ip()
-            base_url = f"http://{node_ip}:{random_port}"
+            base_url = f"http://{node_ip}:{port}"
 
             logger.info(
                 "Session created successfully",

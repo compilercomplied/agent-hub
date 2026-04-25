@@ -37,7 +37,7 @@ def load_agent_dev_env_config(
         v1_client: The Kubernetes CoreV1Api client.
         namespace: The namespace where the configmap resides.
         overrides: Optional runtime environment variable overrides.
-        port: The randomized port the agent should listen on.
+        port: The port the agent should listen on.
 
     Returns:
         The merged AgentDevEnvConfig.
